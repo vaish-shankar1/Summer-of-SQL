@@ -1,6 +1,6 @@
 # Summer of SQL - Challenges 
 
-A collection of SQL challenges created by Will Sutton as part of the Summer of SQL training program. These hands-on exercises were designed to build practical SQL skills by exploring a wide range of functions and techniques, primarily using Snowflake.
+A collection of SQL challenges created by Will Sutton. These hands-on exercises were designed to build practical SQL skills by exploring a wide range of functions and techniques, primarily using Snowflake.
 
 | Case Study | Topic | Link to Challenge | Link to Solution |
 | :--- | :--- | :--- | :--- |
