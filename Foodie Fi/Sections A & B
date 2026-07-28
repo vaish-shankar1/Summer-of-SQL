@@ -1,5 +1,4 @@
-// Week 3 - Foodie Fi - Sections A & B
-
+// Foodie Fi - Sections A & B
 
 // Question 1 - How many customers has Foodie-Fi ever had? 
 select count(distinct customer_id) as customer_cnt
