@@ -1,0 +1,83 @@
+// Week 6 - Data with Danny - The Data Bank - Section A
+// Customer Nodes Exploration 
+
+// Question 1 - How many unique nodes are there on the Data Bank system?
+select count(distinct node_id) as no_nodes 
+from customer_nodes;
+
+
+// Question 2 - What is the number of nodes per region? - taken as not unique number 
+select r.region_name
+, count(distinct cn.node_id) as no_nodes 
+from customer_nodes cn
+inner join regions r
+on cn.region_id = r.region_id
+group by r.region_name;
+
+
+// Question 3 - How many customers are allocated to each region?
+select r.region_name
+, count(distinct cn.customer_id) // if unique number wanted use count(distinct cn.node_id)
+from customer_nodes cn
+inner join regions r
+on cn.region_id = r.region_id
+group by r.region_name;
+
+
+// Question 4 - How many days on average are customers reallocated to a different node?
+// Calculate days per node per customer
+with days as (select customer_id
+, node_id
+, start_date
+, end_date
+, sum(datediff('days', start_date, end_date)) as no_days
+from customer_nodes 
+where date_part('year', end_date) != 9999
+group by all
+order by customer_id asc, end_date asc
+),
+
+// Find rows where node changes
+node_changes as (select *
+,case when node_id = lag(node_id) over (partition by customer_id order by start_date) 
+    then 0 
+    else 1 
+end as is_new_node
+from days
+order by customer_id
+)
+
+// Find average days per node change
+select sum(no_days) / count(is_new_node) as avg_days
+from node_changes;
+
+
+// Question 5 - What is the median, 80th and 95th percentile for this same reallocation days metric for each region?
+// same as above - Calculate days per node per customer
+with days as (select customer_id
+, node_id
+, start_date
+, end_date
+, sum(datediff('days', start_date, end_date)) as no_days
+from customer_nodes 
+where date_part('year', end_date) != 9999
+group by all
+order by customer_id asc, end_date asc
+),
+
+// same as above - Find rows where node changes
+node_changes as (select *
+,case when node_id = lag(node_id) over (partition by customer_id order by start_date) 
+    then 0 
+    else 1 
+end as is_new_node
+from days
+order by customer_id
+)
+
+// 3 values 
+select median(no_days) as median_days
+// order by sorts the no_days values in asc order and returns the percentile value.
+, percentile_cont(.80) within group (order by no_days) as p80 
+, percentile_cont(.95) within group (order by no_days) as p95
+from node_changes;
