@@ -1,0 +1,106 @@
+// Week 1 - SQL Murder Mystery 
+
+// Question 1 - Crime scene report
+select *
+from crime_scene_report
+where type = 'murder' and city = 'SQL City' and date = 20180115;
+
+
+// Question 2 - One witness
+select * from person
+where address_street_name = 'Northwestern Dr'
+order by address_number desc limit 1;
+
+
+// Question 3 - Other witness
+select *
+from person
+where address_street_name = 'Franklin Ave' and name like '%Annabel%';
+
+
+// Question 4 - Get interview transcript
+select *
+from interview
+where person_id = 16371 or person_id = 14887;
+
+
+// Question 5 - Investigate Annabel's statement
+select *
+from get_fit_now_member
+where person_id = 16371;
+
+
+// Question 6 - Investigate Annabel's statement
+select *
+from get_fit_now_check_in
+where membership_id = '90081';
+
+
+// Question 7 - Investigate Annabel's statement
+select *
+from get_fit_now_check_in
+where check_in_date = 20180109
+  and check_in_time <= 1700
+  and check_out_time >= 1600
+  and membership_id != '90081';
+
+
+// Question 8 - Check gym members
+select *
+from get_fit_now_member
+where id = '48Z7A' or id = '48Z55';
+
+
+// Question 9 - Investigate Morty's statement
+select *
+from person
+where id = 67318 or id = 28819;
+
+
+// Question 10 - Investigate Morty's statement
+select *
+from drivers_license
+where id = 173289 or id = 423327;
+
+
+// Question 11 - Murderer check
+insert into solution values (1, 'Jeremy Bowers');
+select value from solution;
+
+
+// Question 12 - Find real villain
+select *
+from interview
+where person_id = 67318;
+
+
+// Question 13 - Identify mastermind
+with dlp as (
+  select p.id
+, p.name
+, dl.hair_color
+, dl.car_make
+, dl.car_model
+, dl.height
+, p.ssn
+from drivers_license dl
+inner join person p
+  on dl.id = p.license_id
+where dl.hair_color = 'red'
+  and dl.car_make = 'Tesla'
+  and dl.car_model = 'Model S'
+  and (dl.height >= 65 and dl.height <= 67)
+),
+
+dlpi as (select *
+from dlp
+inner join income i
+  on dlp.ssn = i.ssn
+)
+
+select dlpi.id
+, dlpi.name
+, fb.event_name
+from dlpi
+inner join facebook_event_checkin fb
+  on fb.person_id = dlpi.id;
