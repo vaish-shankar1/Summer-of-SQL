@@ -2,8 +2,8 @@
 
 A collection of SQL challenges created by Will Sutton as part of the Summer of SQL training program. These hands-on exercises were designed to build practical SQL skills by exploring a wide range of functions and techniques, primarily using Snowflake.
 
-| Case Study | Topic | Skills Used | Link |
-| :--- | :--- | :--- | :--- |
+| Case Study | Topic | Link |
+| :--- | :--- | :--- |
 | **01: SQL Murder Mystery** | Investigation & Crime | Add in link |
 | **02: Preppin' Data with SQL 2023 Weeks 1-4** | Banking & Customer | Add in link |
 | **03: Foodie Fi - Sections A & B** | Subscription | Add in link |
