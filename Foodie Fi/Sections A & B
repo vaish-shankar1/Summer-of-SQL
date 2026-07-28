@@ -1,0 +1,235 @@
+// Week 3 - Foodie Fi - Sections A & B
+
+
+// Question 1 - How many customers has Foodie-Fi ever had? 
+select count(distinct customer_id) as customer_cnt
+from subscriptions; 
+
+
+// Question 2 - What is the monthly distribution of trial plan start_date?
+select month(s.start_date) as month
+, count(s.customer_id) as plan_cnt
+from plans p
+inner join subscriptions s
+on p.plan_id = s.plan_id
+where p.plan_name = 'trial'
+group by month(s.start_date)
+order by month asc;
+
+
+// Question 3 - What plan start_date values occur after the year 2020 for our dataset? 
+select plan_name
+, count(s.customer_id) as plan_cnt
+from plans p
+inner join subscriptions s
+on p.plan_id = s.plan_id
+where year(start_date)>2020
+group by plan_name;
+
+
+// Question 4 - What is the customer count and percentage of customers who have churned rounded to 1 decimal place? 
+select count(case when plan_name = 'churn' then customer_id end) as cnt_churn
+, round((cnt_churn / count(distinct customer_id)) * 100, 1) as pct_churn
+from plans p
+inner join subscriptions s
+on p.plan_id = s.plan_id;
+
+
+// Question 5 - How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
+
+// if plan_name = 'trial' return start_date 
+// dateadd 7 days to this start_date and if plan_name = 'churn' then count customer_id
+
+with trial as (
+select s.start_date
+, customer_id
+, plan_name
+from plans p
+inner join subscriptions s
+on p.plan_id = s.plan_id
+where p.plan_name = 'trial'
+),
+
+churn as (
+select s.start_date
+, customer_id
+, plan_name
+from plans p
+inner join subscriptions s
+on p.plan_id = s.plan_id
+where p.plan_name = 'churn'
+)
+
+select count(case when dateadd('day', 7, t.start_date) = c.start_date then c.customer_id end) as churn_cnt
+from trial t
+inner join churn c
+on t.customer_id = c.customer_id;
+
+
+// Question 6 - What is the number and percentage of customer plans after their initial free trial?
+// count customers where plan_name = 'trial' and 'basic monthly' or 'pro annual' or 'pro monthly' i.e. != 'churn'
+
+// Find how many have trials
+with customer_trial as (select customer_id
+, sum(case when plan_id = 0 then 1 else 0 end) as yes_trial
+from subscriptions
+group by customer_id
+), 
+
+// Find how many had a plans after trial
+customer_after_trial as (select customer_id
+, count(distinct plan_id) -1 as cnt_plans
+from subscriptions
+where plan_id != 4
+group by customer_id
+having count(distinct plan_id) -1 != 0 
+order by customer_id asc
+)
+
+// Calculate proportion of people
+select round((count(cnt_plans)/count(yes_trial)),2)*100 as customer_plan_after_free_trial
+from customer_trial ct
+left join customer_after_trial cat
+on ct.customer_id = cat.customer_id;
+
+
+// Question 7 - What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
+// all plans at date 2020-12-31
+with current_plans as (select s.customer_id
+, s.plan_id
+, s.start_date
+from subscriptions s
+inner join plans p
+on s.plan_id = p.plan_id
+where s.start_date::date <= to_date('2020-12-31', 'YYYY-MM-DD')
+),
+
+// current plan per customer
+current_plan_start_date as (select customer_id
+, max(start_date)::date as start_date
+from current_plans
+group by customer_id
+)
+
+// count number of customers (and percentage) in each plan
+select s.plan_id
+, count(s.plan_id) as cnt_customers
+, round(count(s.plan_id)/10,2) as pct_customers
+from current_plan_start_date cpsd
+inner join subscriptions s
+on cpsd.customer_id = s.customer_id
+and cpsd.start_date = s.start_date
+group by s.plan_id
+order by plan_id asc;
+
+
+// Question 8 - How many customers have upgraded to an annual plan in 2020?
+// Where annual plan start date in 2020 but also customers who haven't got other plan_ids that come after
+
+with current_plans as (select s.customer_id
+, s.plan_id
+, s.start_date
+from subscriptions s
+inner join plans p
+on s.plan_id = p.plan_id
+where s.start_date::date between date '2020-01-01' AND date '2020-12-31' 
+and s.plan_id = 3
+)
+
+select count(customer_id) as total_customers
+from current_plans;
+
+
+// Question 9 - How many days on average does it take for a customer to an annual plan from the day they join Foodie-Fi?
+
+with first_date_joined as (select s.customer_id
+, min(s.start_date) as first_date
+from subscriptions s
+inner join plans p
+on s.plan_id = p.plan_id
+group by customer_id
+order by customer_id asc
+),
+
+annual_plan_date as (select s.customer_id
+, s.start_date as annual_start_date
+from subscriptions s
+inner join plans p
+on s.plan_id = p.plan_id
+where s.plan_id = 3
+), 
+
+days_taken as (select apd.customer_id
+, first_date
+, annual_start_date
+, datediff('day', first_date, annual_start_date) as days_to_annual_upgrade
+from annual_plan_date apd
+inner join first_date_joined fdj
+on apd.customer_id = fdj.customer_id
+),
+
+// not as CTE to answer Question 9 but needed as CTE for Question 10 
+avg_days_taken as (select round(avg(days_to_annual_upgrade),2) as avg_time_days
+from days_taken
+)
+
+
+// Question 10 - Can you further breakdown this average value into 30 day periods (i.e. 0-30 days, 31-60 days etc)
+
+// more hardcoded attempt
+/*
+select case 
+when avg_time_days between 0 and 30 then '0-30 days' 
+when avg_time_days between 31 and 60 then '31-60 days' 
+when avg_time_days between 61 and 90 then '61-90 days' 
+when avg_time_days between 91 and 120 then '91-120 days'
+else '121+days'
+end as period
+from avg_days_taken
+*/
+
+
+//alternative that will work for much larger numbers
+select avg_time_days,
+concat(floor (avg_time_days / 30) * 30+1, 
+        '-',
+        floor (avg_time_days / 30) * 30 + 30,
+        ' days'
+        ) as period
+from avg_days_taken;
+
+
+// Question 11 - How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
+
+select count(distinct s1.customer_id) as customers
+from subscriptions s1
+inner join subscriptions s2
+on s1.customer_id = s2.customer_id
+where s1.plan_id = 2 and s2.plan_id = 1
+and s1.start_date < s2.start_date
+and year(s2.start_date) = 2020;
+
+//-------
+
+//Challenge Question using new functions
+// For every customer who started with a trial, what did they do next?
+with ranked_subscriptions as (select s.customer_id
+, p.plan_name
+, s.start_date
+, lead(p.plan_name) over (partition by s.customer_id order by s.start_date) as next_plan /* Find the very next plan the customer moved to */
+, row_number() over (partition by s.customer_id order by s.start_date) as plan_order /* Identify the absolute first trial row for the customer */ 
+from plans p 
+inner join subscriptions s 
+on p.plan_id = s.plan_id
+), 
+
+initial_trials as (select coalesce(next_plan, 'churn / cancelled') as post_trial_plan  /* Label customers who left entirely after the trial as 'no plan' after */ 
+from ranked_subscriptions 
+where plan_name = 'trial' and plan_order = 1 ) 
+
+select post_trial_plan
+, count(*) as number_of_customers
+, round(100.0 * count(*) / sum(count(*)) over(), 2) as percentage_of_customers // the over shows the count on every row
+from initial_trials 
+group by post_trial_plan
+order by number_of_customers desc; 
